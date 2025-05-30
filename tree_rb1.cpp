@@ -66,7 +66,7 @@ class Node {
 
 };
 
-class Rb_tree{
+class Avl_tree{
     private:
         Node* root;
 
@@ -78,9 +78,9 @@ class Rb_tree{
         }
     public:
 
-    Rb_tree(Node* _root) : root(_root){}
+    Avl_tree(Node* _root) : root(_root){}
 
-    ~Rb_tree() {
+    ~Avl_tree() {
         destroy_tree(root);
     }
 
@@ -143,7 +143,7 @@ int main(void){
     int array[tamanho] = {5, 6, 4, 3, 2};
 
     Node* root = new Node(nullptr, array[0]);
-    Rb_tree* tree = new Rb_tree(root);
+    Avl_tree* tree = new Avl_tree(root);
     tree->build_tree(array, tamanho);
     tree->print_tree(root);
 

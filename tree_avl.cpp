@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -6,21 +7,13 @@ class Node {
     private:
         int key;
         int height;
-        int blf;
-        Node* father;
         Node* right;
         Node* left;
     public:
 
-        Node(Node* _father, int _key) : father(_father), left(nullptr), right(nullptr), height(1), blf(0), key(_key) {};
+        Node(int _key) : left(nullptr), right(nullptr), height(1), key(_key) {};
 
         // getters
-
-
-        int get_blf(){
-            return this->blf;
-        }
-
         int get_height(){
             return this->height;
         }
@@ -37,18 +30,14 @@ class Node {
             return this->right;
         }
 
-        Node* get_father() const {
-            return this->father;
-        }
-
         // seters
 
-        void set_blf(){
-            this->blf = this->left->get_height() - this->right->get_height();
+        void set_height(int value){
+            this->height = value;
         }
 
-        void increase_height(){ 
-            this->height += 1;
+        void set_key(int value){
+            this->key = value;
         }
 
         void set_left(Node* new_node){
@@ -59,14 +48,9 @@ class Node {
             this->right = new_node;
         }
 
-        void set_father(Node* new_node){
-            this->father = new_node;
-        }
-
-
 };
 
-class Avl_tree{
+class Rb_tree{
     private:
         Node* root;
 
@@ -78,75 +62,250 @@ class Avl_tree{
         }
     public:
 
-    Avl_tree(Node* _root) : root(_root){}
+    Rb_tree() : root(nullptr){}
 
-    ~Avl_tree() {
+    ~Rb_tree() {
         destroy_tree(root);
     }
 
-    void build_tree(int* array_numbers, int size){
-            for(int i = 1; i < size; i++){
-                insert(this->root, array_numbers[i]);
-            }
+    int height (Node* N){
+        if(N == nullptr){
+            return 0;
         }
+        return N->get_height();
+    }
 
-    void insert(Node*father, int number){
-        if(father->get_key() < number){
-            if(father->get_right() == nullptr){
-                father->set_right(new Node(father, number));
-                father->increase_height();
-            }
-            else{
-                insert(father->get_right(), number);
-            }
+    Node* insert(Node* node, int value) {
+    if (node == nullptr) {
+        return new Node(value);
+    }
+
+    if (value < node->get_key()) {
+        node->set_left(insert(node->get_left(), value));
+    } else {
+        node->set_right(insert(node->get_right(), value));
+    }
+
+    node->set_height(max(height(node->get_left()), height(node->get_right())) + 1);
+
+    int balance = getBalance(node);
+
+    // Rotação direita (RR)
+    if (balance > 1 && value < node->get_left()->get_key()) {
+        return rightRotate(node);
+    }
+    // Rotação esquerda (LL)
+    if (balance < -1 && value > node->get_right()->get_key()) {
+        return leftRotate(node);
+    }
+    // Rotação esquerda-direita (LR)
+    if (balance > 1 && value > node->get_left()->get_key()) {
+        node->set_left(leftRotate(node->get_left()));
+        return rightRotate(node);
+    }
+    // Rotação direita-esquerda (RL)
+    if (balance < -1 && value < node->get_right()->get_key()) {
+        node->set_right(rightRotate(node->get_right()));
+        return leftRotate(node);
+    }
+
+    return node;
+}
+
+    Node* rightRotate(Node* y){
+        Node* x = y->get_left();
+        Node* T2 = x->get_right();
+
+        x->set_right(y);
+        y->set_left(T2);
+
+        y->set_height(max(height(y->get_left()), height(y->get_right()) ) + 1);
+        x->set_height(max(height(x->get_left()), height(x->get_right())) + 1);
+
+        return x;
+    }
+
+    Node* leftRotate(Node* x){
+        Node* y = x->get_right();
+        Node* T2 = y->get_left();
+
+        y->set_left(x);
+        x->set_right(T2);
+
+        x->set_height(max(height(x->get_left()), height(x->get_right())) + 1);
+        y->set_height(max(height(y->get_left()), height(y->get_right())) + 1);
+
+        return y;
+    }
+
+    int getBalance(Node* N){
+        if(N == nullptr){
+            return 0;
         }
-        else{
-            if(father->get_key() > number){
-                if(father->get_left() == nullptr){
-                    father->set_left(new Node(father, number));
-                    father->increase_height();
-                }
-                else{
-                    insert(father->get_left(), number);
-                }
-            }
+        return height(N->get_left()) - height(N->get_right());
+    }
+
+    void preOrder(Node* root) {
+        if(root != nullptr){
+            preOrder(root->get_left());
+            cout << root->get_key();
+            preOrder(root->get_right());
         }
     }
 
-    void print_tree(Node* no){
-            cout <<"Nó: " <<no->get_key();
+    Node* minValueNode(Node* node){
+        Node* current = node;
 
-            if(no->get_left() != nullptr){
-                cout << ", Esquerda: " << no->get_left()->get_key();
-            }
-
-            if(no->get_right() != nullptr){
-                cout << ", Direita: " << no->get_right()->get_key();
-            }
-            
-            cout << "\n";
-
-            if(no->get_left() != nullptr){
-                print_tree(no -> get_left());
-            }
-
-             if(no->get_right() != nullptr){
-                print_tree(no -> get_right());
-            }
-        
+        while(current->get_left() != nullptr){
+            current = current->get_left();
         }
+
+        return current;
+    }
+
+    Node* deleteNode(Node* root, int value){
+
+        if(root ==nullptr){
+            return root;
+        }
+
+        if(value < root->get_key()){
+            root->set_left(deleteNode(root->get_left(), value));
+        }
+
+        else if(value > root->get_key()){
+                root->set_right(deleteNode(root->get_right(), value));
+        }
+
+        else {
+
+            if( (root->get_left() == nullptr) || (root->get_right() == nullptr)){
+                Node* temp;
+                if(root->get_left() != nullptr){
+                    temp = root->get_left();
+                }
+                else{
+                    temp = root->get_right();
+                }
+
+                if(temp == nullptr){
+                    temp = root;
+                    root = nullptr;
+                }
+                else{
+                    root = temp;
+                }
+
+                temp = nullptr;
+            }
+            else{
+                Node* temp = minValueNode(root->get_right());
+
+                root->set_key(temp->get_key());
+
+                root->set_right(deleteNode(root->get_right(), temp->get_key()));
+            }
+        }
+
+        if(root == nullptr){
+            return root;
+        }
+
+        root->set_height(max(height(root->get_left()), height(root->get_right())) + 1);
+
+        int balance = getBalance(root);
+
+        if(balance > 1 && getBalance(root->get_left()) >= 0){
+            return rightRotate(root);
+        }
+
+        if(balance > 1 && getBalance(root->get_left()) < 0){
+            root->set_left(leftRotate(root->get_left()));
+        }
+
+        if(balance < -1 && getBalance(root->get_right()) <= 0){
+            return leftRotate(root);
+        }
+
+        if(balance < -1 && getBalance(root->get_right()) > 0){
+            root->set_right(rightRotate(root->get_right()));
+            return leftRotate(root);
+        }
+    
+        return root;
+    }
+
+    Node* search(Node* N, int value) {
+        Node* x = N;
+
+        if (x == nullptr) {
+            cout << "Árvore vazia!\n";
+            return nullptr;
+        }
+
+        while (x != nullptr && x->get_key() != value) {
+            if (value < x->get_key()) {
+                x = x->get_left();
+            } else {
+                x = x->get_right();
+            }
+        }
+
+        return x;
+}
+
+    void print_tree(Node* no) {
+        if (no == nullptr) {
+            return;
+        }
+        cout << "Altura: " << no->get_height() << " No: " << no->get_key();
+
+        if (no->get_left() != nullptr) {
+            cout << ", Esquerda: " << no->get_left()->get_key();
+        }
+
+        if (no->get_right() != nullptr) {
+            cout << ", Direita: " << no->get_right()->get_key();
+        }
+        cout << "\n";
+
+        if (no->get_left() != nullptr) {
+            print_tree(no->get_left());
+        }
+
+        if (no->get_right() != nullptr) {
+            print_tree(no->get_right());
+        }
+    }
 
 };
 
-int main(void){
-    int tamanho = 5;
-    int array[tamanho] = {5, 6, 4, 3, 2};
+int main() {
+    int tamanho = 12;
+    int array[tamanho] = {5, 6, 4, 3, 2, 1, 0, 11, 14, 13, 20, 19};
 
-    Node* root = new Node(nullptr, array[0]);
-    Avl_tree* tree = new Avl_tree(root);
-    tree->build_tree(array, tamanho);
-    tree->print_tree(root);
+    Node* root = nullptr;
+    Rb_tree tree; // Melhor não usar new (evitar memory leaks)
 
-    delete tree;
+    for(int i = 0; i < tamanho; i++) {
+        root = tree.insert(root, array[i]);
+        cout << "Inserido: " << array[i] << " | Root atual: " << (root ? root->get_key() : -1) << endl;
+    }
+
+    if (root != nullptr) {
+        cout << "\nÁrvore construída:\n";
+        tree.print_tree(root);
+    } else {
+        cout << "Erro: A árvore está vazia!\n";
+    }
+
+    Node* search = tree.search(root, 19);
+    if(search == nullptr){
+        cout << "Esse número não existe na árvore\n";
+    }
+    else{
+        cout<< "O número: " << search->get_key() <<" esta na altura " << search->get_height();
+    }
+
     return 0;
 }
